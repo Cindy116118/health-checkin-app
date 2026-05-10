@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>健康打卡助手</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ===== DESIGN TOKENS ===== */
+:root {
+  --rose: oklch(62% 0.12 350);
+  --rose-light: oklch(90% 0.05 350);
+  --rose-lighter: oklch(95% 0.02 350);
+  --rose-dark: oklch(48% 0.10 350);
+  --rose-50: oklch(97% 0.01 350);
+  --sage: oklch(60% 0.08 155);
+  --sage-light: oklch(92% 0.04 155);
+  --sage-dark: oklch(45% 0.07 155);
+  --peach: oklch(72% 0.12 65);
+  --peach-light: oklch(93% 0.04 65);
+  --lav: oklch(70% 0.08 300);
+  --lav-light: oklch(93% 0.04 300);
+  --cream-0: oklch(98% 0.008 85);
+  --cream-1: oklch(99.5% 0.004 85);
+  --cream-2: oklch(97% 0.008 85);
+  --warm-100: oklch(94% 0.01 80);
+  --warm-200: oklch(88% 0.012 80);
+  --warm-300: oklch(76% 0.01 80);
+  --warm-400: oklch(62% 0.012 80);
+  --warm-500: oklch(48% 0.012 80);
+  --warm-600: oklch(38% 0.012 80);
+  --warm-700: oklch(28% 0.01 80);
+  --warm-800: oklch(20% 0.008 80);
+  --warm-900: oklch(14% 0.008 80);
+  --tx-1: oklch(18% 0.008 80);
+  --tx-2: oklch(40% 0.01 80);
+  --tx-3: oklch(58% 0.01 80);
+  --tx-inv: oklch(98% 0.004 85);
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px;
+  --s5: 20px; --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px;
+  --r-sm: 10px; --r-md: 16px; --r-lg: 22px; --r-xl: 28px; --r-pill: 9999px;
+  --sh-xs: 0 1px 3px oklch(20% 0.01 80 / 0.03);
+  --sh-sm: 0 2px 8px oklch(20% 0.01 80 / 0.04), 0 1px 2px oklch(20% 0.01 80 / 0.02);
+  --sh-md: 0 4px 16px oklch(20% 0.01 80 / 0.05), 0 1px 4px oklch(20% 0.01 80 / 0.03);
+  --sh-lg: 0 8px 32px oklch(20% 0.01 80 / 0.07), 0 2px 6px oklch(20% 0.01 80 / 0.03);
+  --sh-rose: 0 4px 20px oklch(62% 0.12 350 / 0.25);
+  --ease: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-f: 120ms; --dur-n: 250ms; --dur-s: 400ms; --dur-enter: 350ms;
+  --ff: 'Outfit', system-ui, -apple-system, 'PingFang SC', sans-serif;
+  --txs: 0.6875rem; --tsm: 0.8125rem; --tbase: 0.875rem; --tmd: 1rem;
+  --tlg: 1.25rem; --txl: 1.5rem; --t2xl: 1.875rem; --thero: 2.75rem;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: var(--ff); background: oklch(92% 0.01 80);
+  color: var(--tx-1); font-size: var(--tbase); line-height: 1.55;
+  overflow-x: hidden; -webkit-font-smoothing: antialiased;
+}
+
+/* ===== PHONE ===== */
+.phone {
+  width: 375px; min-height: 812px; margin: 0 auto;
+  background: var(--cream-0); position: relative; overflow: hidden;
+  box-shadow: 0 0 0 8px oklch(20% 0.01 80 / 0.05), 0 20px 60px oklch(20% 0.01 80 / 0.1);
+  border-radius: 40px;
+}
+.sbar {
+  height: 54px; display: flex; align-items: flex-end; justify-content: space-between;
+  padding: 0 var(--s6) 8px; font-size: var(--tsm); font-weight: 600;
+  position: absolute; top: 0; left: 0; right: 0; z-index: 200;
+  color: var(--tx-inv); transition: color var(--dur-n) var(--ease);
+}
+.sbar .t { font-size: var(--tmd); font-weight: 700; letter-spacing: -0.02em; }
+
+.pcont {
+  height: calc(812px - 54px - 76px - var(--safe-b));
+  overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;
+}
+.pcont::-webkit-scrollbar { display: none; }
+.pg { display: none; min-height: 100%; opacity: 0; }
+.pg.on { display: block; animation: pgIn var(--dur-enter) var(--ease-expo) forwards; }
+@keyframes pgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ===== FLOATING TAB BAR ===== */
+.tbar {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: calc(76px + var(--safe-b)); z-index: 100;
+  display: flex; justify-content: center;
+  padding: 0 var(--s5) var(--s3); padding-bottom: calc(var(--s3) + var(--safe-b));
+}
+.tbar-in {
+  display: flex; align-items: center; justify-content: space-around;
+  width: 100%; background: oklch(99.5% 0.004 85 / 0.88);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border-radius: var(--r-lg); padding: var(--s2) var(--s4);
+  box-shadow: 0 -1px 0 oklch(20% 0.01 80 / 0.03), var(--sh-lg);
+}
+.ti {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  padding: var(--s1) var(--s3); border-radius: var(--r-sm);
+  transition: all var(--dur-f) var(--ease); position: relative;
+}
+.ti .tic {
+  width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+  color: var(--tx-3); transition: color var(--dur-n) var(--ease), transform var(--dur-f) var(--ease);
+}
+.ti .tic svg { width: 22px; height: 22px; fill: currentColor; }
+.ti .tl { font-size: 10px; font-weight: 500; color: var(--tx-3); transition: color var(--dur-n) var(--ease); }
+.ti.on .tic { color: var(--rose); transform: translateY(-1px); }
+.ti.on .tl { color: var(--rose); font-weight: 700; }
+.ti:active { transform: scale(0.92); }
+.ti-c .tic {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--rose), oklch(58% 0.14 345));
+  color: white; margin-top: -18px;
+  box-shadow: var(--sh-rose); transition: transform var(--dur-f) var(--ease);
+}
+.ti-c .tic svg { fill: white; }
+.ti-c:active .tic { transform: scale(0.9) translateY(-18px); }
+
+/* ===== COMMON ===== */
+.shd { display: flex; align-items: baseline; justify-content: space-between; padding: var(--s5) var(--s5) var(--s3); }
+.sht { font-size: var(--tmd); font-weight: 700; color: var(--tx-1); letter-spacing: -0.01em; }
+.sha { font-size: var(--txs); font-weight: 600; color: var(--rose); cursor: pointer; }
+.crd {
+  background: var(--cream-1); border-radius: var(--r-md);
+  box-shadow: var(--sh-sm); transition: transform var(--dur-f) var(--ease), box-shadow var(--dur-f) var(--ease);
+}
+.crd:active { transform: scale(0.97); box-shadow: var(--sh-xs); }
+.bdg {
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 2px 8px; border-radius: var(--r-pill);
+  font-size: 11px; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums;
+}
+.bdg-dn { background: var(--sage-light); color: var(--sage-dark); }
+.bdg-up { background: var(--peach-light); color: oklch(50% 0.13 55); }
+
+/* ===== HOME ===== */
+.hero {
+  background: linear-gradient(155deg, oklch(50% 0.12 345) 0%, oklch(58% 0.10 350) 40%, oklch(52% 0.08 10) 100%);
+  padding: calc(54px + var(--s6)) var(--s5) var(--s12);
+  color: var(--tx-inv); position: relative; overflow: hidden;
+}
+.hero::before { content: ''; position: absolute; top: -50px; right: -40px; width: 180px; height: 180px; border-radius: 50%; background: oklch(99% 0.004 85 / 0.06); }
+.hero::after { content: ''; position: absolute; bottom: -30px; left: 40%; width: 120px; height: 120px; border-radius: 50%; background: oklch(99% 0.004 85 / 0.04); }
+.petal { position: absolute; border-radius: 50% 0 50% 50%; background: oklch(99% 0.004 85 / 0.05); transform: rotate(45deg); }
+.petal-1 { width: 30px; height: 30px; top: 80px; right: 60px; }
+.petal-2 { width: 18px; height: 18px; top: 40px; right: 100px; opacity: 0.5; }
+.petal-3 { width: 22px; height: 22px; bottom: 60px; left: 30px; transform: rotate(-15deg); }
+
+.hero .gr { font-size: var(--tsm); opacity: 0.7; font-weight: 400; position: relative; letter-spacing: 0.02em; }
+.hero .un { font-size: var(--txl); font-weight: 800; margin-top: var(--s1); position: relative; letter-spacing: -0.02em; }
+.hero .dt { font-size: var(--txs); opacity: 0.5; margin-top: var(--s1); position: relative; }
+
+/* Enhanced quote section with illustration */
+.hero-qt {
+  margin-top: var(--s5); position: relative;
+  display: flex; gap: var(--s4); align-items: center;
+}
+.qt-illust {
+  flex-shrink: 0; width: 100px; height: 100px; position: relative;
+}
+.qt-illust svg { width: 100%; height: 100%; }
+.hero .qt {
+  flex: 1; padding: var(--s4);
+  background: oklch(99% 0.004 85 / 0.12);
+  border-radius: var(--r-md);
+  font-size: var(--tbase); line-height: 1.8;
+  position: relative; font-weight: 400;
+  border-left: 3px solid oklch(99% 0.004 85 / 0.3);
+}
+
+/* Checkin prompt */
+.cip {
+  margin: -22px var(--s5) 0; padding: var(--s4);
+  display: flex; align-items: center; justify-content: space-between;
+  position: relative; z-index: 10; cursor: pointer;
+}
+.cip .ci {
+  width: 46px; height: 46px; border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center; font-size: 22px;
+  background: linear-gradient(135deg, var(--rose-light), var(--lav-light));
+}
+.cip .ct .ctt { font-size: var(--tbase); font-weight: 700; color: var(--tx-1); }
+.cip .ct .cts { font-size: var(--txs); color: var(--tx-3); margin-top: 1px; }
+.cip .cb {
+  padding: var(--s2) var(--s5); border-radius: var(--r-pill); border: none;
+  background: linear-gradient(135deg, var(--rose), oklch(58% 0.14 345));
+  color: white; font-size: var(--tsm); font-weight: 600;
+  font-family: var(--ff); cursor: pointer; box-shadow: var(--sh-rose);
+  transition: transform var(--dur-f) var(--ease);
+}
+.cip .cb:active { transform: scale(0.93); }
+
+/* Indicators */
+.igrid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); padding: 0 var(--s5); }
+.icard { padding: var(--s4); cursor: pointer; }
+.icard .ict { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--s2); }
+.icard .icl { font-size: var(--txs); color: var(--tx-3); font-weight: 500; }
+.icard .ici { width: 30px; height: 30px; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.ici-w { background: var(--rose-light); }
+.ici-f { background: var(--lav-light); }
+.ici-s { background: var(--peach-light); }
+.ici-r { background: var(--sage-light); }
+.icard .iv { font-size: var(--txl); font-weight: 800; color: var(--tx-1); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.icard .iu { font-size: var(--txs); color: var(--tx-3); font-weight: 400; }
+.icard .ift { display: flex; align-items: center; justify-content: space-between; margin-top: var(--s2); }
+.icard .it { font-size: var(--txs); color: var(--tx-3); }
+
+.icard { opacity: 0; animation: cIn var(--dur-s) var(--ease-expo) forwards; }
+.icard:nth-child(1) { animation-delay: 80ms; }
+.icard:nth-child(2) { animation-delay: 140ms; }
+.icard:nth-child(3) { animation-delay: 200ms; }
+.icard:nth-child(4) { animation-delay: 260ms; }
+@keyframes cIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.sbar-row { display: flex; gap: var(--s3); padding: var(--s4) var(--s5) var(--s5); }
+.sc {
+  flex: 1; background: var(--cream-1); border-radius: var(--r-sm);
+  padding: var(--s3) var(--s2); text-align: center; box-shadow: var(--sh-xs);
+}
+.sc .sv { font-size: var(--tlg); font-weight: 800; color: var(--rose); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.sc .sl { font-size: 10px; color: var(--tx-3); margin-top: 2px; font-weight: 500; }
+
+/* ===== DATA PAGE ===== */
+.dtop { background: var(--cream-1); padding: calc(54px + var(--s5)) var(--s5) var(--s4); }
+.dtop .pt { font-size: var(--tlg); font-weight: 800; color: var(--tx-1); letter-spacing: -0.01em; }
+.mpills { display: flex; gap: var(--s2); margin-top: var(--s4); overflow-x: auto; padding-bottom: var(--s1); }
+.mpills::-webkit-scrollbar { display: none; }
+.mp {
+  flex-shrink: 0; padding: var(--s2) var(--s3); border-radius: var(--r-pill);
+  font-size: var(--tsm); font-weight: 600; font-family: var(--ff);
+  border: 1.5px solid var(--warm-200); background: var(--cream-1); color: var(--tx-3);
+  cursor: pointer; transition: all var(--dur-f) var(--ease);
+}
+.mp:active { transform: scale(0.95); }
+.mp.on { background: var(--rose); color: white; border-color: var(--rose); box-shadow: 0 2px 10px oklch(62% 0.12 350 / 0.2); }
+.cchart { margin: var(--s4) var(--s5); padding: var(--s4); }
+.cchart svg { width: 100%; height: 180px; display: block; }
+.cchart .cl { fill: none; stroke: var(--rose); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.cchart .caf { fill: url(#cgr); }
+.cchart .cd { fill: var(--rose); r: 3.5; stroke: white; stroke-width: 2; }
+.cchart .gl { stroke: var(--warm-100); stroke-width: 1; }
+.cchart .al { fill: var(--tx-3); font-size: 10px; font-weight: 500; }
+.rtabs { display: flex; justify-content: center; gap: var(--s3); margin-top: var(--s4); padding-top: var(--s3); border-top: 1px solid var(--warm-100); }
+.rt {
+  padding: var(--s1) var(--s3); border-radius: var(--r-pill);
+  font-size: 11px; font-weight: 600; color: var(--tx-3);
+  cursor: pointer; font-family: var(--ff); border: none; background: none;
+  transition: all var(--dur-f) var(--ease);
+}
+.rt.on { background: var(--rose-light); color: var(--rose-dark); }
+.dsum { display: flex; gap: var(--s3); padding: 0 var(--s5); }
+.di { flex: 1; background: var(--cream-1); border-radius: var(--r-md); padding: var(--s4) var(--s2); text-align: center; box-shadow: var(--sh-xs); }
+.di .dv { font-size: var(--tlg); font-weight: 800; color: var(--tx-1); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.di .dl { font-size: 11px; color: var(--tx-3); margin-top: var(--s1); font-weight: 500; }
+.enc {
+  margin: var(--s4) var(--s5) var(--s6);
+  background: linear-gradient(135deg, var(--rose-50), oklch(96% 0.02 80));
+  border-radius: var(--r-md); padding: var(--s5); text-align: center; position: relative; overflow: hidden;
+}
+.enc::before { content: ''; position: absolute; top: -20px; right: -20px; width: 80px; height: 80px; border-radius: 50%; background: oklch(62% 0.12 350 / 0.05); }
+.enc .et { font-size: var(--tsm); color: var(--rose-dark); line-height: 1.7; position: relative; font-weight: 400; }
+
+/* ===== CHECK-IN ===== */
+.cihero { padding: calc(54px + var(--s5)) var(--s5) var(--s4); }
+.cihero .pt { font-size: var(--tlg); font-weight: 800; color: var(--tx-1); letter-spacing: -0.01em; }
+.cihero .ps { font-size: var(--tsm); color: var(--tx-3); margin-top: var(--s1); }
+
+.tgrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--s3); padding: 0 var(--s5); }
+.tc { padding: var(--s5) var(--s3); text-align: center; cursor: pointer; }
+.tc:active { transform: scale(0.95); }
+.tc .tci {
+  width: 56px; height: 56px; border-radius: var(--r-md);
+  margin: 0 auto var(--s3); display: flex; align-items: center; justify-content: center; font-size: 28px;
+  transition: transform var(--dur-n) var(--ease);
+}
+.tc:active .tci { transform: scale(0.9); }
+.tci-b { background: linear-gradient(135deg, var(--rose-light), var(--rose-50)); }
+.tci-d { background: linear-gradient(135deg, var(--peach-light), var(--cream-2)); }
+.tci-e { background: linear-gradient(135deg, var(--sage-light), var(--cream-2)); }
+.tc .tcn { font-size: var(--tsm); font-weight: 700; color: var(--tx-1); }
+.tc .tcd { font-size: 11px; color: var(--tx-3); margin-top: var(--s1); line-height: 1.4; }
+
+/* Today's records */
+.rec-sec { padding: 0 var(--s5); }
+.rec-card {
+  background: var(--cream-1); border-radius: var(--r-md);
+  box-shadow: var(--sh-sm); padding: var(--s4); margin-bottom: var(--s3);
+  transition: transform var(--dur-f) var(--ease);
+}
+.rec-card:active { transform: scale(0.97); }
+.rec-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--s3); }
+.rec-hd-left { display: flex; align-items: center; gap: var(--s2); }
+.rec-icon { width: 36px; height: 36px; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.rec-icon-body { background: var(--rose-light); }
+.rec-icon-diet { background: var(--peach-light); }
+.rec-icon-exercise { background: var(--sage-light); }
+.rec-name { font-size: var(--tbase); font-weight: 700; color: var(--tx-1); }
+.rec-time { font-size: 11px; color: var(--tx-3); }
+.rec-items { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.rec-tag {
+  display: inline-flex; align-items: center; gap: var(--s1);
+  padding: var(--s1) var(--s3); border-radius: var(--r-pill);
+  font-size: var(--tsm); font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.rec-tag-rose { background: var(--rose-lighter); color: var(--rose-dark); }
+.rec-tag-sage { background: var(--sage-light); color: var(--sage-dark); }
+.rec-tag-peach { background: var(--peach-light); color: oklch(50% 0.13 55); }
+.rec-tag-lav { background: var(--lav-light); color: oklch(48% 0.10 300); }
+
+/* Share button */
+.share-btn {
+  display: flex; align-items: center; justify-content: center; gap: var(--s2);
+  width: calc(100% - var(--s10));
+  margin: var(--s3) auto var(--s6);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-pill); border: 1.5px dashed var(--rose);
+  background: var(--rose-50);
+  font-size: var(--tsm); font-weight: 700; color: var(--rose);
+  font-family: var(--ff); cursor: pointer;
+  transition: all var(--dur-f) var(--ease);
+}
+.share-btn:active { transform: scale(0.96); background: var(--rose-lighter); }
+.share-btn svg { width: 16px; height: 16px; fill: var(--rose); }
+
+/* ===== Mood Picker ===== */
+.mood-card {
+  margin: 0 var(--s5) var(--s4); background: var(--cream-1);
+  border-radius: var(--r-md); padding: var(--s4) var(--s5);
+  box-shadow: var(--sh-sm); text-align: center;
+}
+.mood-card .mood-label { font-size: var(--txs); color: var(--tx-3); font-weight: 500; margin-bottom: var(--s3); letter-spacing: 0.02em; }
+.mood-row { display: flex; justify-content: center; gap: var(--s3); margin-bottom: var(--s3); }
+.mood-item {
+  display: flex; flex-direction: column; align-items: center; gap: var(--s1);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  padding: var(--s2); border-radius: var(--r-md);
+  transition: all var(--dur-n) var(--ease); border: 2px solid transparent;
+}
+.mood-item:active { transform: scale(0.9); }
+.mood-item .mood-emoji { font-size: 28px; transition: transform var(--dur-n) var(--ease); line-height: 1.2; }
+.mood-item .mood-text { font-size: 10px; color: var(--tx-3); font-weight: 500; transition: color var(--dur-n) var(--ease); }
+.mood-item.selected {
+  border-color: var(--rose); background: var(--rose-lighter);
+  box-shadow: 0 2px 12px oklch(62% 0.12 350 / 0.15);
+}
+.mood-item.selected .mood-emoji { transform: scale(1.15); }
+.mood-item.selected .mood-text { color: var(--rose); font-weight: 700; }
+.mood-note {
+  width: 100%; margin-top: var(--s2); padding: var(--s3);
+  border: 1.5px solid var(--warm-200); border-radius: var(--r-sm);
+  font-size: var(--tsm); font-family: var(--ff); color: var(--tx-1);
+  background: var(--cream-0); outline: none; resize: none;
+  transition: border-color var(--dur-f) var(--ease), box-shadow var(--dur-f) var(--ease);
+  line-height: 1.6;
+}
+.mood-note:focus { border-color: var(--rose); box-shadow: 0 0 0 3px oklch(62% 0.12 350 / 0.1); }
+.mood-note::placeholder { color: var(--tx-3); opacity: 0.6; }
+.mood-saved {
+  display: none; align-items: center; justify-content: center; gap: var(--s2);
+  padding: var(--s3) 0; font-size: var(--tsm); color: var(--sage-dark);
+  font-weight: 600;
+}
+.mood-saved.show { display: flex; }
+.mood-save-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  margin-top: var(--s3); padding: var(--s2) var(--s6);
+  border-radius: var(--r-pill); border: none;
+  background: linear-gradient(135deg, var(--rose), oklch(58% 0.14 345));
+  color: white; font-size: var(--tsm); font-weight: 700;
+  font-family: var(--ff); cursor: pointer;
+  box-shadow: var(--sh-rose); transition: transform var(--dur-f) var(--ease);
+}
+.mood-save-btn:active { transform: scale(0.95); }
+.mood-save-btn:disabled { opacity: 0.4; box-shadow: none; cursor: default; }
+.mood-save-btn:disabled:active { transform: none; }
+
+/* Empty state */
+.emp { margin: var(--s5); padding: var(--s8) var(--s5); text-align: center; }
+.emp .ei { font-size: 48px; margin-bottom: var(--s3); animation: gf 3s ease-in-out infinite; }
+@keyframes gf { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.emp .et { font-size: var(--tbase); color: var(--tx-3); font-weight: 500; }
+.emp .es { font-size: var(--txs); color: var(--tx-3); margin-top: var(--s1); opacity: 0.7; }
+
+/* ===== FORM OVERLAY ===== */
+.fov {
+  position: absolute; inset: 0; background: var(--cream-0);
+  z-index: 150; transform: translateX(100%);
+  transition: transform var(--dur-s) var(--ease-expo);
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+.fov::-webkit-scrollbar { display: none; }
+.fov.show { transform: translateX(0); }
+.fnav {
+  position: sticky; top: 0; z-index: 151;
+  background: oklch(99.5% 0.004 85 / 0.92);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  padding: calc(54px + var(--s3)) var(--s4) var(--s3);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.fnav .bb {
+  width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--warm-200);
+  background: var(--cream-1); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 18px; color: var(--tx-1); transition: background var(--dur-f);
+}
+.fnav .bb:active { background: var(--warm-100); }
+.fnav .nt { font-size: var(--tmd); font-weight: 700; }
+.fnav .sb {
+  color: var(--rose); font-size: var(--tbase); font-weight: 700;
+  cursor: pointer; border: none; background: none; font-family: var(--ff);
+  padding: var(--s2); border-radius: var(--r-sm); transition: background var(--dur-f);
+}
+.fnav .sb:active { background: var(--rose-light); }
+.fsec {
+  margin: var(--s4) var(--s5); background: var(--cream-1);
+  border-radius: var(--r-md); padding: var(--s5); box-shadow: var(--sh-sm);
+}
+.fsec .fst { font-size: var(--tbase); font-weight: 700; margin-bottom: var(--s4); display: flex; align-items: center; gap: var(--s2); }
+.ff {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--s3) 0; border-bottom: 1px solid var(--warm-100);
+}
+.ff:last-child { border-bottom: none; }
+.ff label { font-size: var(--tbase); color: var(--tx-2); font-weight: 400; }
+.fiw { display: flex; align-items: center; gap: var(--s1); }
+.fi {
+  width: 80px; height: 40px; border: 1.5px solid var(--warm-200);
+  border-radius: var(--r-sm); text-align: right; padding: 0 var(--s3);
+  font-size: var(--tmd); font-weight: 700; font-family: var(--ff);
+  color: var(--tx-1); background: var(--cream-0); outline: none;
+  transition: border-color var(--dur-f) var(--ease), box-shadow var(--dur-f) var(--ease);
+  font-variant-numeric: tabular-nums;
+}
+.fi:focus { border-color: var(--rose); box-shadow: 0 0 0 3px oklch(62% 0.12 350 / 0.1); }
+.fu { font-size: var(--txs); color: var(--tx-3); width: 28px; font-weight: 500; }
+.ti-input {
+  width: 140px; height: 40px; border: 1.5px solid var(--warm-200);
+  border-radius: var(--r-sm); text-align: left; padding: 0 var(--s3);
+  font-size: var(--tsm); font-family: var(--ff); color: var(--tx-1);
+  background: var(--cream-0); outline: none;
+  transition: border-color var(--dur-f) var(--ease), box-shadow var(--dur-f) var(--ease);
+}
+.ti-input:focus { border-color: var(--rose); box-shadow: 0 0 0 3px oklch(62% 0.12 350 / 0.1); }
+.subm {
+  display: block; width: calc(100% - var(--s10));
+  margin: var(--s5) auto var(--s10); padding: var(--s4);
+  border-radius: var(--r-pill); border: none;
+  background: linear-gradient(135deg, var(--rose), oklch(58% 0.14 345));
+  color: white; font-size: var(--tmd); font-weight: 700;
+  font-family: var(--ff); cursor: pointer;
+  box-shadow: var(--sh-rose); transition: transform var(--dur-f) var(--ease); letter-spacing: 0.03em;
+}
+.subm:active { transform: scale(0.97); }
+
+/* Exercise type selector */
+.ex-step-hint {
+  text-align: center; padding: var(--s3) var(--s5); font-size: var(--tsm); color: var(--tx-3);
+}
+.ex-type-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); padding: 0 var(--s5) var(--s5);
+}
+.ex-type-card {
+  background: var(--cream-1); border-radius: var(--r-md); padding: var(--s4);
+  text-align: center; cursor: pointer; box-shadow: var(--sh-sm);
+  transition: all var(--dur-n) var(--ease); border: 2px solid transparent;
+}
+.ex-type-card:active { transform: scale(0.95); }
+.ex-type-card.selected {
+  border-color: var(--rose); background: var(--rose-lighter);
+  box-shadow: var(--sh-rose);
+}
+.ex-type-icon { width: 48px; height: 48px; border-radius: var(--r-md); margin: 0 auto var(--s2); display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.ex-type-name { font-size: var(--tbase); font-weight: 700; color: var(--tx-1); }
+.ex-type-desc { font-size: 11px; color: var(--tx-3); margin-top: 2px; }
+
+/* Exercise detail form */
+.ex-detail-form { display: none; padding: 0 var(--s5); }
+.ex-detail-form.show { display: block; }
+.ex-detail-back {
+  display: inline-flex; align-items: center; gap: var(--s1);
+  padding: var(--s2) var(--s3); margin-bottom: var(--s3);
+  font-size: var(--tsm); color: var(--rose); font-weight: 600;
+  cursor: pointer; border-radius: var(--r-sm);
+  font-family: var(--ff); border: none; background: none;
+}
+.ex-detail-back:active { background: var(--rose-lighter); }
+
+/* ===== CALENDAR ===== */
+.calh { padding: calc(54px + var(--s4)) var(--s5) var(--s5); text-align: center; }
+.stkd {
+  display: inline-flex; align-items: baseline; gap: var(--s2);
+  background: linear-gradient(135deg, var(--rose-50), oklch(95% 0.02 350));
+  padding: var(--s5) var(--s8); border-radius: var(--r-lg);
+  position: relative; overflow: hidden;
+}
+.stkd::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 30% 50%, oklch(62% 0.12 350 / 0.06), transparent 60%); }
+.skn { font-size: var(--thero); font-weight: 800; color: var(--rose); letter-spacing: -0.03em; line-height: 1; position: relative; font-variant-numeric: tabular-nums; }
+.sku { font-size: var(--tsm); color: var(--rose-dark); font-weight: 500; position: relative; }
+.sksb { display: flex; align-items: center; justify-content: center; gap: var(--s1); margin-top: var(--s3); font-size: var(--txs); color: var(--tx-3); }
+.skf { display: inline-block; animation: flk 1.5s ease-in-out infinite alternate; }
+@keyframes flk { 0% { transform: scale(1) rotate(-2deg); } 100% { transform: scale(1.1) rotate(2deg); } }
+.cnav { display: flex; align-items: center; justify-content: space-between; padding: var(--s2) var(--s5); }
+.cnav .mt { font-size: var(--tmd); font-weight: 700; }
+.cnav .na {
+  width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--warm-200);
+  background: var(--cream-1); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 14px; color: var(--tx-2); transition: all var(--dur-f);
+}
+.cnav .na:active { background: var(--warm-100); }
+.ccard { margin: 0 var(--s5) var(--s4); padding: var(--s4) var(--s3); }
+.cwds { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; margin-bottom: var(--s2); }
+.cwds span { font-size: 11px; color: var(--tx-3); font-weight: 600; padding: var(--s1) 0; }
+.cds { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.cd {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  font-size: var(--tsm); border-radius: 50%; position: relative;
+  cursor: pointer; font-weight: 500; transition: all var(--dur-f) var(--ease); color: var(--tx-1);
+}
+.cd.empty { pointer-events: none; }
+.cd:hover { background: var(--warm-100); }
+.cd.tod {
+  background: linear-gradient(135deg, var(--rose), oklch(58% 0.14 345));
+  color: white; font-weight: 700; box-shadow: 0 2px 8px oklch(62% 0.12 350 / 0.25);
+}
+.cd.chk::after {
+  content: ''; position: absolute; bottom: 3px;
+  width: 5px; height: 5px; border-radius: 50%; background: var(--rose);
+}
+.cd.tod.chk::after { background: white; }
+
+/* Calendar detail & badges */
+.bsec { padding: 0 var(--s5) var(--s6); }
+.bscr { display: flex; gap: var(--s4); overflow-x: auto; padding-bottom: var(--s2); }
+.bscr::-webkit-scrollbar { display: none; }
+.ach { flex-shrink: 0; width: 76px; text-align: center; }
+.achi {
+  width: 56px; height: 56px; border-radius: 50%;
+  margin: 0 auto var(--s2); display: flex; align-items: center; justify-content: center;
+  font-size: 24px; transition: transform var(--dur-f) var(--ease);
+}
+.ach:active .achi { transform: scale(0.9); }
+.achi.on { background: linear-gradient(145deg, oklch(90% 0.08 80), oklch(85% 0.10 75)); box-shadow: 0 2px 12px oklch(75% 0.1 75 / 0.2); }
+.achi.lk { background: var(--warm-100); opacity: 0.35; filter: grayscale(1); }
+.achn { font-size: 10px; color: var(--tx-3); font-weight: 500; }
+.ach.on .achn { color: var(--tx-2); font-weight: 600; }
+
+/* ===== BOTTOM SHEET ===== */
+.bs-overlay {
+  position: absolute; inset: 0; z-index: 160;
+  background: oklch(20% 0.01 80 / 0.4);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  display: none; align-items: flex-end; justify-content: center;
+}
+.bs-overlay.show { display: flex; }
+.bs-sheet {
+  width: 100%; max-height: 65%; background: var(--cream-1);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  padding: var(--s3) var(--s5) var(--s8);
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  animation: bsUp var(--dur-s) var(--ease-expo);
+}
+@keyframes bsUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.bs-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--warm-200); margin: 0 auto var(--s4);
+}
+.bs-title { font-size: var(--tmd); font-weight: 700; text-align: center; margin-bottom: var(--s4); color: var(--tx-1); }
+.bs-date { font-size: var(--tsm); color: var(--tx-3); text-align: center; margin-bottom: var(--s4); }
+.bs-close {
+  position: absolute; top: var(--s4); right: var(--s5);
+  width: 28px; height: 28px; border-radius: 50%; border: none;
+  background: var(--warm-200); display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: var(--tx-2); cursor: pointer; font-family: var(--ff);
+}
+.bs-close:active { background: var(--warm-300); }
+
+/* ===== POSTER OVERLAY ===== */
+.poster-ov {
+  position: absolute; inset: 0; z-index: 170;
+  background: oklch(20% 0.01 80 / 0.6);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  display: none; align-items: center; justify-content: center; padding: var(--s8);
+}
+.poster-ov.show { display: flex; }
+.poster-card {
+  width: 300px; border-radius: var(--r-lg); overflow: hidden;
+  background: linear-gradient(165deg, oklch(95% 0.03 350), oklch(97% 0.01 85));
+  box-shadow: var(--sh-lg); position: relative;
+  animation: popIn 400ms var(--ease-expo);
+}
+@keyframes popIn { from { transform: scale(0.7); opacity: 0; } 60% { transform: scale(1.03); } 100% { transform: scale(1); opacity: 1; } }
+.poster-hero {
+  padding: var(--s8) var(--s5) var(--s5);
+  background: linear-gradient(155deg, oklch(55% 0.11 345), oklch(60% 0.09 350));
+  color: var(--tx-inv); text-align: center; position: relative; overflow: hidden;
+}
+.poster-hero::before { content: ''; position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; border-radius: 50%; background: oklch(99% 0.004 85 / 0.06); }
+.poster-hero::after { content: ''; position: absolute; bottom: -15px; left: 30%; width: 60px; height: 60px; border-radius: 50%; background: oklch(99% 0.004 85 / 0.04); }
+.poster-hero .ph-streak { font-size: var(--txs); opacity: 0.7; position: relative; }
+.poster-hero .ph-num { font-size: 2.5rem; font-weight: 800; line-height: 1.1; position: relative; letter-spacing: -0.03em; }
+.poster-hero .ph-sub { font-size: var(--tsm); opacity: 0.8; margin-top: var(--s1); position: relative; }
+.poster-body { padding: var(--s5); }
+.poster-user { display: flex; align-items: center; gap: var(--s3); margin-bottom: var(--s4); }
+.poster-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--rose-light), var(--lav-light)); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.poster-uname { font-size: var(--tbase); font-weight: 700; color: var(--tx-1); }
+.poster-udate { font-size: 11px; color: var(--tx-3); }
+.poster-records { display: flex; flex-direction: column; gap: var(--s2); }
+.poster-rec-item {
+  display: flex; align-items: center; gap: var(--s2);
+  padding: var(--s2) var(--s3); background: var(--cream-0);
+  border-radius: var(--r-sm); font-size: var(--tsm);
+}
+.poster-rec-icon { font-size: 14px; }
+.poster-rec-text { flex: 1; color: var(--tx-2); font-weight: 500; }
+.poster-rec-val { font-weight: 700; color: var(--tx-1); font-variant-numeric: tabular-nums; }
+.poster-footer {
+  text-align: center; padding-top: var(--s3);
+  border-top: 1px solid var(--warm-100); margin-top: var(--s3);
+}
+.poster-brand { font-size: 11px; color: var(--tx-3); font-weight: 500; }
+.poster-actions {
+  margin-top: var(--s5); display: flex; gap: var(--s3); justify-content: center;
+}
+.poster-btn {
+  padding: var(--s3) var(--s6); border-radius: var(--r-pill);
+  font-size: var(--tsm); font-weight: 700; font-family: var(--ff);
+  cursor: pointer; transition: transform var(--dur-f) var(--ease); border: none;
+}
+.poster-btn:active { transform: scale(0.95); }
+.poster-btn-save { background: var(--rose); color: white; box-shadow: var(--sh-rose); }
+.poster-btn-share { background: var(--cream-1); color: var(--tx-1); border: 1px solid var(--warm-200); }
+
+/* ===== SUCCESS ===== */
+.sov {
+  position: absolute; inset: 0; z-index: 200;
+  display: none; align-items: center; justify-content: center;
+  background: oklch(20% 0.01 80 / 0.35);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.sov.show { display: flex; }
+.soc { text-align: center; animation: sp 400ms var(--ease-expo); }
+@keyframes sp { 0% { transform: scale(0.5); opacity: 0; } 60% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+.sck {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--rose), oklch(58% 0.14 345));
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto var(--s4); box-shadow: var(--sh-rose);
+}
+.sck svg { width: 36px; height: 36px; fill: none; stroke: white; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.stx { color: white; font-size: var(--tlg); font-weight: 700; }
+.sst { color: oklch(93% 0.01 85); font-size: var(--tsm); margin-top: var(--s1); }
+
+/* ===== PROFILE ===== */
+.phero {
+  background: linear-gradient(155deg, oklch(50% 0.12 345) 0%, oklch(58% 0.10 350) 40%, oklch(52% 0.08 10) 100%);
+  padding: calc(54px + var(--s8)) var(--s5) var(--s10);
+  text-align: center; color: var(--tx-inv); position: relative; overflow: hidden;
+}
+.phero::before { content: ''; position: absolute; top: -30px; left: -30px; width: 120px; height: 120px; border-radius: 50%; background: oklch(99% 0.004 85 / 0.05); }
+.pav {
+  width: 76px; height: 76px; border-radius: 50%;
+  background: oklch(99% 0.004 85 / 0.15);
+  margin: 0 auto var(--s3); display: flex; align-items: center; justify-content: center;
+  font-size: 34px; border: 3px solid oklch(99% 0.004 85 / 0.25); position: relative;
+}
+.pn { font-size: var(--tlg); font-weight: 800; letter-spacing: -0.01em; }
+.pb { font-size: var(--txs); opacity: 0.6; margin-top: var(--s1); font-weight: 300; }
+.psts {
+  display: flex; margin: -24px var(--s5) 0; position: relative; z-index: 10;
+  gap: 1px; background: var(--warm-200); border-radius: var(--r-md); overflow: hidden; box-shadow: var(--sh-md);
+}
+.psi { flex: 1; background: var(--cream-1); padding: var(--s4) var(--s2); text-align: center; }
+.psi .pv { font-size: var(--tlg); font-weight: 800; color: var(--rose); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.psi .pl { font-size: 11px; color: var(--tx-3); margin-top: 2px; font-weight: 500; }
+.mg { margin: var(--s4) var(--s5); background: var(--cream-1); border-radius: var(--r-md); overflow: hidden; box-shadow: var(--sh-xs); }
+.mr {
+  display: flex; align-items: center; padding: var(--s4);
+  border-bottom: 1px solid var(--warm-100); cursor: pointer;
+  transition: background var(--dur-f); -webkit-tap-highlight-color: transparent;
+}
+.mr:last-child { border-bottom: none; }
+.mr:active { background: var(--cream-2); }
+.mr .mi { width: 34px; height: 34px; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; font-size: 16px; margin-right: var(--s3); flex-shrink: 0; }
+.mi-rose { background: var(--rose-light); }
+.mi-peach { background: var(--peach-light); }
+.mi-lav { background: var(--lav-light); }
+.mi-sage { background: var(--sage-light); }
+.mi-warm { background: var(--cream-2); }
+.mi-gray { background: var(--warm-100); }
+.mr .ml { flex: 1; font-size: var(--tbase); font-weight: 500; color: var(--tx-1); }
+.mr .mb { background: var(--rose); color: white; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: var(--r-pill); margin-right: var(--s2); }
+.mr .ma { color: var(--tx-3); font-size: 18px; font-weight: 300; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="sbar" id="sbar"><span class="t">22:57</span><div><span>📶</span><span>🔋</span></div></div>
+
+  <div class="pcont">
+
+    <!-- ===== HOME ===== -->
+    <div class="pg on" id="pg-home">
+      <div class="hero">
+        <div class="petal petal-1"></div>
+        <div class="petal petal-2"></div>
+        <div class="petal petal-3"></div>
+        <div class="gr">晚上好</div>
+        <div class="un">Cindy</div>
+        <div class="dt">2026年5月9日 · 星期六</div>
+        <div class="hero-qt">
+          <div class="qt-illust">
+            <svg viewBox="0 0 120 120" fill="none">
+              <!-- Sun -->
+              <circle cx="60" cy="38" r="14" fill="oklch(99% 0.004 85 / 0.25)" stroke="oklch(99% 0.004 85 / 0.3)" stroke-width="1.5"/>
+              <line x1="60" y1="16" x2="60" y2="20" stroke="oklch(99% 0.004 85 / 0.2)" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="60" y1="56" x2="60" y2="60" stroke="oklch(99% 0.004 85 / 0.2)" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="38" y1="38" x2="42" y2="38" stroke="oklch(99% 0.004 85 / 0.2)" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="78" y1="38" x2="82" y2="38" stroke="oklch(99% 0.004 85 / 0.2)" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="44.4" y1="22.4" x2="47.2" y2="25.2" stroke="oklch(99% 0.004 85 / 0.15)" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="72.8" y1="50.8" x2="75.6" y2="53.6" stroke="oklch(99% 0.004 85 / 0.15)" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="75.6" y1="22.4" x2="72.8" y2="25.2" stroke="oklch(99% 0.004 85 / 0.15)" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="47.2" y1="50.8" x2="44.4" y2="53.6" stroke="oklch(99% 0.004 85 / 0.15)" stroke-width="1.5" stroke-linecap="round"/>
+              <!-- Plant growing -->
+              <path d="M60 62 Q58 75 50 85" stroke="oklch(99% 0.004 85 / 0.2)" stroke-width="2" stroke-linecap="round" fill="none"/>
+              <path d="M60 62 Q62 78 70 88" stroke="oklch(99% 0.004 85 / 0.2)" stroke-width="2" stroke-linecap="round" fill="none"/>
+              <path d="M60 62 Q55 72 48 72" stroke="oklch(99% 0.004 85 / 0.15)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+              <path d="M60 62 Q65 70 72 70" stroke="oklch(99% 0.004 85 / 0.15)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+              <circle cx="48" cy="85" r="5" fill="oklch(99% 0.004 85 / 0.12)"/>
+              <circle cx="70" cy="88" r="6" fill="oklch(99% 0.004 85 / 0.1)"/>
+              <circle cx="46" cy="72" r="4" fill="oklch(99% 0.004 85 / 0.1)"/>
+              <circle cx="73" cy="70" r="4.5" fill="oklch(99% 0.004 85 / 0.1)"/>
+              <!-- Heart -->
+              <path d="M96 50 C96 45, 90 42, 87 46 C84 42, 78 45, 78 50 C78 56, 87 62, 87 62 C87 62, 96 56, 96 50Z" fill="oklch(99% 0.004 85 / 0.15)" />
+              <!-- Stars -->
+              <circle cx="30" cy="30" r="1.5" fill="oklch(99% 0.004 85 / 0.2)"/>
+              <circle cx="100" cy="25" r="1" fill="oklch(99% 0.004 85 / 0.15)"/>
+              <circle cx="22" cy="55" r="1.2" fill="oklch(99% 0.004 85 / 0.18)"/>
+              <circle cx="105" cy="50" r="1.3" fill="oklch(99% 0.004 85 / 0.12)"/>
+            </svg>
+          </div>
+          <div class="qt">自律给我自由，每一天的坚持都在为更好的自己铺路。🌱</div>
+        </div>
+      </div>
+
+      <div class="cip crd" onclick="switchTab(2)">
+        <div style="display:flex;align-items:center;gap:var(--s3)">
+          <div class="ci">💪</div>
+          <div class="ct"><div class="ctt">今日打卡</div><div class="cts">身体数据 · 运动 · 饮食</div></div>
+        </div>
+        <button class="cb">去打卡</button>
+      </div>
+
+      <div class="shd"><span class="sht">核心指标</span><span class="sha">查看详情 ›</span></div>
+      <div class="igrid">
+        <div class="icard crd">
+          <div class="ict"><span class="icl">体重</span><div class="ici ici-w">⚖️</div></div>
+          <div class="iv">58.5 <span class="iu">kg</span></div>
+          <div class="ift"><span class="bdg bdg-dn">↓ 0.3</span><span class="it">目标 55.0</span></div>
+        </div>
+        <div class="icard crd">
+          <div class="ict"><span class="icl">体脂率</span><div class="ici ici-f">📊</div></div>
+          <div class="iv">22.1 <span class="iu">%</span></div>
+          <div class="ift"><span class="bdg bdg-dn">↓ 0.2</span><span class="it">目标 20.0</span></div>
+        </div>
+        <div class="icard crd">
+          <div class="ict"><span class="icl">运动时长</span><div class="ici ici-s">🏃</div></div>
+          <div class="iv">45 <span class="iu">min</span></div>
+          <div class="ift"><span class="bdg bdg-up">↑ 10</span><span class="it">目标 60</span></div>
+        </div>
+        <div class="icard crd">
+          <div class="ict"><span class="icl">腰臀比</span><div class="ici ici-r">📏</div></div>
+          <div class="iv">0.78</div>
+          <div class="ift"><span class="bdg bdg-dn">↓ 0.01</span><span class="it">目标 0.75</span></div>
+        </div>
+      </div>
+
+      <div class="shd"><span class="sht">打卡统计</span></div>
+      <div class="sbar-row">
+        <div class="sc"><div class="sv">15</div><div class="sl">连续打卡</div></div>
+        <div class="sc"><div class="sv">89</div><div class="sl">累计打卡</div></div>
+        <div class="sc"><div class="sv">6</div><div class="sl">分享海报</div></div>
+      </div>
+    </div>
+
+    <!-- ===== DATA ===== -->
+    <div class="pg" id="pg-data">
+      <div class="dtop">
+        <div class="pt">数据趋势</div>
+        <div class="mpills">
+          <span class="mp on" onclick="swMp(this)">全部</span>
+          <span class="mp" onclick="swMp(this)">体重</span>
+          <span class="mp" onclick="swMp(this)">体脂率</span>
+          <span class="mp" onclick="swMp(this)">运动时长</span>
+          <span class="mp" onclick="swMp(this)">腰臀比</span>
+        </div>
+      </div>
+      <div class="cchart crd">
+        <svg viewBox="0 0 343 180">
+          <defs><linearGradient id="cgr" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="oklch(62% 0.12 350 / 0.2)"/><stop offset="100%" stop-color="oklch(62% 0.12 350 / 0)"/></linearGradient></defs>
+          <line class="gl" x1="30" y1="10" x2="330" y2="10"/><line class="gl" x1="30" y1="50" x2="330" y2="50"/><line class="gl" x1="30" y1="90" x2="330" y2="90"/><line class="gl" x1="30" y1="130" x2="330" y2="130"/><line class="gl" x1="30" y1="160" x2="330" y2="160"/>
+          <text class="al" x="2" y="14">60</text><text class="al" x="2" y="54">59</text><text class="al" x="2" y="94">58</text><text class="al" x="2" y="134">57</text><text class="al" x="2" y="164">56</text>
+          <path class="caf" d="M30,75 L86,65 L142,85 L198,55 L254,45 L310,30 L310,160 L30,160 Z"/>
+          <polyline class="cl" points="30,75 86,65 142,85 198,55 254,45 310,30"/>
+          <circle class="cd" cx="30" cy="75"/><circle class="cd" cx="86" cy="65"/><circle class="cd" cx="142" cy="85"/><circle class="cd" cx="198" cy="55"/><circle class="cd" cx="254" cy="45"/><circle class="cd" cx="310" cy="30"/>
+          <text class="al" x="26" y="175">5/4</text><text class="al" x="78" y="175">5/5</text><text class="al" x="134" y="175">5/6</text><text class="al" x="190" y="175">5/7</text><text class="al" x="246" y="175">5/8</text><text class="al" x="302" y="175">5/9</text>
+        </svg>
+        <div class="rtabs">
+          <button class="rt" onclick="swRt(this)">7天</button>
+          <button class="rt on" onclick="swRt(this)">30天</button>
+          <button class="rt" onclick="swRt(this)">90天</button>
+          <button class="rt" onclick="swRt(this)">全部</button>
+        </div>
+      </div>
+      <div class="dsum">
+        <div class="di"><div class="dv">-1.5</div><div class="dl">本期变化(kg)</div></div>
+        <div class="di"><div class="dv">58.5</div><div class="dl">当前体重(kg)</div></div>
+        <div class="di"><div class="dv">55.0</div><div class="dl">目标体重(kg)</div></div>
+      </div>
+      <div class="enc"><div class="et">本周体重持续下降，体脂率也在稳步改善中！坚持就是胜利，距离目标越来越近了。</div></div>
+    </div>
+
+    <!-- ===== CHECK-IN ===== -->
+    <div class="pg" id="pg-checkin">
+      <div class="cihero"><div class="pt">打卡</div><div class="ps">记录今天的身体状态吧</div></div>
+      <div class="tgrid">
+        <div class="tc crd" onclick="openF('body')"><div class="tci tci-b">🧍</div><div class="tcn">身体数据</div><div class="tcd">体重·体脂·围度</div></div>
+        <div class="tc crd" onclick="openF('diet')"><div class="tci tci-d">🥗</div><div class="tcn">饮食记录</div><div class="tcd">三餐饮食打卡</div></div>
+        <div class="tc crd" onclick="openF('exercise')"><div class="tci tci-e">🏋️</div><div class="tcn">运动记录</div><div class="tcd">有氧·力量训练</div></div>
+      </div>
+
+      <!-- Mood Picker -->
+      <div class="mood-card">
+        <div class="mood-label">今天的心情</div>
+        <div class="mood-row">
+          <div class="mood-item" onclick="selectMood(this,'😊')">
+            <span class="mood-emoji">😊</span><span class="mood-text">开心</span>
+          </div>
+          <div class="mood-item" onclick="selectMood(this,'😌')">
+            <span class="mood-emoji">😌</span><span class="mood-text">平静</span>
+          </div>
+          <div class="mood-item" onclick="selectMood(this,'😴')">
+            <span class="mood-emoji">😴</span><span class="mood-text">疲惫</span>
+          </div>
+          <div class="mood-item" onclick="selectMood(this,'😤')">
+            <span class="mood-emoji">😤</span><span class="mood-text">烦躁</span>
+          </div>
+          <div class="mood-item" onclick="selectMood(this,'🔥')">
+            <span class="mood-emoji">🔥</span><span class="mood-text">元气</span>
+          </div>
+        </div>
+        <textarea class="mood-note" id="mood-note" rows="2" placeholder="记录此刻的想法..."></textarea>
+        <button class="mood-save-btn" id="mood-save-btn" onclick="saveMood()">保存心情</button>
+        <div class="mood-saved" id="mood-saved">✅ 心情已记录</div>
+      </div>
+
+      <!-- Today's records section -->
+      <div class="shd"><span class="sht">今日记录</span></div>
+      <div class="rec-sec" id="today-records">
+        <!-- Mood record (shown after saved) -->
+        <div class="rec-card" id="mood-rec-card" style="display:none">
+          <div class="rec-hd">
+            <div class="rec-hd-left">
+              <div class="rec-icon" style="background:linear-gradient(135deg,var(--lav-light),var(--rose-light))" id="mood-rec-icon">😊</div>
+              <div><div class="rec-name">今日心情</div><div class="rec-time" id="mood-rec-time"></div></div>
+            </div>
+          </div>
+          <div id="mood-rec-note" style="font-size:var(--tsm);color:var(--tx-2);margin-top:var(--s1);line-height:1.6"></div>
+        </div>
+        <!-- Body record -->
+        <div class="rec-card">
+          <div class="rec-hd">
+            <div class="rec-hd-left">
+              <div class="rec-icon rec-icon-body">🧍</div>
+              <div><div class="rec-name">身体数据</div><div class="rec-time">08:30 打卡</div></div>
+            </div>
+          </div>
+          <div class="rec-items">
+            <span class="rec-tag rec-tag-rose">体重 58.5kg ↓0.3</span>
+            <span class="rec-tag rec-tag-lav">体脂 22.1% ↓0.2</span>
+            <span class="rec-tag rec-tag-sage">腰围 72cm</span>
+            <span class="rec-tag rec-tag-peach">臀围 92cm</span>
+          </div>
+        </div>
+        <!-- Exercise record -->
+        <div class="rec-card">
+          <div class="rec-hd">
+            <div class="rec-hd-left">
+              <div class="rec-icon rec-icon-exercise">🏃</div>
+              <div><div class="rec-name">运动 · 跑步</div><div class="rec-time">18:15 打卡</div></div>
+            </div>
+          </div>
+          <div class="rec-items">
+            <span class="rec-tag rec-tag-sage">⏱ 30min</span>
+            <span class="rec-tag rec-tag-rose">📏 5.0km</span>
+            <span class="rec-tag rec-tag-peach">🔥 280kcal</span>
+          </div>
+        </div>
+        <!-- Exercise record 2 -->
+        <div class="rec-card">
+          <div class="rec-hd">
+            <div class="rec-hd-left">
+              <div class="rec-icon rec-icon-exercise">💪</div>
+              <div><div class="rec-name">运动 · 力量训练</div><div class="rec-time">18:50 打卡</div></div>
+            </div>
+          </div>
+          <div class="rec-items">
+            <span class="rec-tag rec-tag-sage">⏱ 15min</span>
+            <span class="rec-tag rec-tag-peach">🔥 90kcal</span>
+          </div>
+        </div>
+        <!-- Share today button -->
+        <button class="share-btn" onclick="showPoster('today')">
+          <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+          分享今日打卡海报
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== FORM: Body ===== -->
+    <div class="fov" id="f-body">
+      <div class="fnav"><button class="bb" onclick="closeF('body')">←</button><span class="nt">身体数据</span><button class="sb" onclick="submit()">保存</button></div>
+      <div class="fsec">
+        <div class="fst">📏 身体测量</div>
+        <div class="ff"><label>体重</label><div class="fiw"><input class="fi" type="number" value="58.5" step="0.1"><span class="fu">kg</span></div></div>
+        <div class="ff"><label>体脂率</label><div class="fiw"><input class="fi" type="number" value="22.1" step="0.1"><span class="fu">%</span></div></div>
+        <div class="ff"><label>腰围</label><div class="fiw"><input class="fi" type="number" value="72" step="0.1"><span class="fu">cm</span></div></div>
+        <div class="ff"><label>臀围</label><div class="fiw"><input class="fi" type="number" value="92" step="0.1"><span class="fu">cm</span></div></div>
+      </div>
+      <button class="subm" onclick="submit()">提交打卡</button>
+    </div>
+
+    <!-- ===== FORM: Diet ===== -->
+    <div class="fov" id="f-diet">
+      <div class="fnav"><button class="bb" onclick="closeF('diet')">←</button><span class="nt">饮食记录</span><button class="sb" onclick="submit()">保存</button></div>
+      <div class="fsec"><div class="fst">🌅 早餐</div><div class="ff"><label>食物</label><input class="ti-input" type="text" placeholder="记录你的早餐"></div></div>
+      <div class="fsec"><div class="fst">☀️ 午餐</div><div class="ff"><label>食物</label><input class="ti-input" type="text" placeholder="记录你的午餐"></div></div>
+      <div class="fsec"><div class="fst">🌙 晚餐</div><div class="ff"><label>食物</label><input class="ti-input" type="text" placeholder="记录你的晚餐"></div></div>
+      <button class="subm" onclick="submit()">提交打卡</button>
+    </div>
+
+    <!-- ===== FORM: Exercise (Two-step) ===== -->
+    <div class="fov" id="f-exercise">
+      <div class="fnav"><button class="bb" onclick="closeF('exercise')">←</button><span class="nt">运动记录</span><span></span></div>
+
+      <!-- Step 1: Type Selection -->
+      <div id="ex-step1">
+        <div class="ex-step-hint">选择你要记录的训练项目</div>
+        <div class="ex-type-grid">
+          <div class="ex-type-card" onclick="selectExType(this,'run')">
+            <div class="ex-type-icon" style="background:linear-gradient(135deg,var(--rose-light),var(--rose-50))">🏃</div>
+            <div class="ex-type-name">跑步</div>
+            <div class="ex-type-desc">户外·跑步机</div>
+          </div>
+          <div class="ex-type-card" onclick="selectExType(this,'strength')">
+            <div class="ex-type-icon" style="background:linear-gradient(135deg,var(--peach-light),var(--cream-2))">💪</div>
+            <div class="ex-type-name">力量训练</div>
+            <div class="ex-type-desc">上肢·下肢·核心</div>
+          </div>
+          <div class="ex-type-card" onclick="selectExType(this,'yoga')">
+            <div class="ex-type-icon" style="background:linear-gradient(135deg,var(--lav-light),var(--cream-2))">🧘</div>
+            <div class="ex-type-name">瑜伽</div>
+            <div class="ex-type-desc">拉伸·冥想</div>
+          </div>
+          <div class="ex-type-card" onclick="selectExType(this,'swim')">
+            <div class="ex-type-icon" style="background:linear-gradient(135deg,var(--sage-light),var(--cream-2))">🏊</div>
+            <div class="ex-type-name">游泳</div>
+            <div class="ex-type-desc">自由泳·蛙泳</div>
+          </div>
+          <div class="ex-type-card" onclick="selectExType(this,'cycling')">
+            <div class="ex-type-icon" style="background:linear-gradient(135deg,var(--rose-light),var(--lav-light))">🚴</div>
+            <div class="ex-type-name">骑行</div>
+            <div class="ex-type-desc">室内·户外</div>
+          </div>
+          <div class="ex-type-card" onclick="selectExType(this,'hiit')">
+            <div class="ex-type-icon" style="background:linear-gradient(135deg,var(--peach-light),var(--sage-light))">⚡</div>
+            <div class="ex-type-name">HIIT</div>
+            <div class="ex-type-desc">高强度间歇</div>
+          </div>
+          <div class="ex-type-card" onclick="selectExType(this,'dance')">
+            <div class="ex-type-icon" style="background:linear-gradient(135deg,var(--lav-light),var(--rose-light))">💃</div>
+            <div class="ex-type-name">舞蹈</div>
+            <div class="ex-type-desc">健身操·有氧舞</div>
+          </div>
+          <div class="ex-type-card" onclick="selectExType(this,'walk')">
+            <div class="ex-type-icon" style="background:linear-gradient(135deg,var(--sage-light),var(--lav-light))">🚶</div>
+            <div class="ex-type-name">健走</div>
+            <div class="ex-type-desc">散步·快走</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Detail Form -->
+      <div class="ex-detail-form" id="ex-step2">
+        <button class="ex-detail-back" onclick="exBack()">← 返回选择训练项目</button>
+        <div class="fsec">
+          <div class="fst" id="ex-form-title">🏃 跑步</div>
+          <div id="ex-form-fields"></div>
+        </div>
+        <button class="subm" onclick="submit()">提交打卡</button>
+      </div>
+    </div>
+
+    <!-- Success -->
+    <div class="sov" id="suc" onclick="dissSuc()"><div class="soc"><div class="sck"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div><div class="stx">打卡成功</div><div class="sst">又进步了一点点 ✨</div></div></div>
+
+    <!-- ===== CALENDAR ===== -->
+    <div class="pg" id="pg-calendar">
+      <div class="calh">
+        <div class="stkd"><span class="skn">15</span><span class="sku">天</span></div>
+        <div class="sksb"><span class="skf">🔥</span> 连续打卡 · 最长32天</div>
+      </div>
+      <div class="cnav"><span class="na" onclick="prevM()">‹</span><span class="mt" id="mt">2026年5月</span><span class="na" onclick="nextM()">›</span></div>
+      <div class="ccard crd">
+        <div class="cwds"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+        <div class="cds" id="cds"></div>
+      </div>
+      <div class="shd"><span class="sht">成就徽章</span><span class="sha">查看全部 ›</span></div>
+      <div class="bsec"><div class="bscr">
+        <div class="ach on"><div class="achi on">🔥</div><div class="achn">7天连续</div></div>
+        <div class="ach on"><div class="achi on">⚡</div><div class="achn">14天连续</div></div>
+        <div class="ach on"><div class="achi on">🏆</div><div class="achn">30天连续</div></div>
+        <div class="ach"><div class="achi lk">💎</div><div class="achn">60天连续</div></div>
+        <div class="ach"><div class="achi lk">👑</div><div class="achn">100天连续</div></div>
+      </div></div>
+    </div>
+
+    <!-- ===== PROFILE ===== -->
+    <div class="pg" id="pg-profile">
+      <div class="phero"><div class="pav">🧘‍♀️</div><div class="pn">Cindy辛迪</div><div class="pb">坚持打卡，遇见更好的自己</div></div>
+      <div class="psts">
+        <div class="psi"><div class="pv">15</div><div class="pl">连续打卡</div></div>
+        <div class="psi"><div class="pv">89</div><div class="pl">累计打卡</div></div>
+        <div class="psi"><div class="pv">-3.5</div><div class="pl">减重(kg)</div></div>
+      </div>
+      <div class="mg">
+        <div class="mr"><div class="mi mi-rose">👤</div><span class="ml">基本信息</span><span class="ma">›</span></div>
+        <div class="mr"><div class="mi mi-peach">🎯</div><span class="ml">目标设置</span><span class="ma">›</span></div>
+        <div class="mr"><div class="mi mi-lav">📊</div><span class="ml">首页指标配置</span><span class="ma">›</span></div>
+      </div>
+      <div class="mg">
+        <div class="mr"><div class="mi mi-sage">⏰</div><span class="ml">打卡时间提醒</span><span class="ma">›</span></div>
+        <div class="mr"><div class="mi mi-warm">💬</div><span class="ml">文案收藏</span><span class="mb">12</span><span class="ma">›</span></div>
+      </div>
+      <div class="mg" style="margin-bottom:var(--s6)">
+        <div class="mr"><div class="mi mi-lav">🖼️</div><span class="ml">海报分享记录</span><span class="ma">›</span></div>
+        <div class="mr"><div class="mi mi-gray">⚙️</div><span class="ml">系统设置</span><span class="ma">›</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="tbar">
+    <div class="tbar-in">
+      <div class="ti on" onclick="switchTab(0)"><span class="tic"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span><span class="tl">首页</span></div>
+      <div class="ti" onclick="switchTab(1)"><span class="tic"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg></span><span class="tl">数据</span></div>
+      <div class="ti ti-c" onclick="switchTab(2)"><span class="tic"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></span><span class="tl">打卡</span></div>
+      <div class="ti" onclick="switchTab(3)"><span class="tic"><svg viewBox="0 0 24 24"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg></span><span class="tl">日历</span></div>
+      <div class="ti" onclick="switchTab(4)"><span class="tic"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></span><span class="tl">我的</span></div>
+    </div>
+  </div>
+
+  <!-- ===== Bottom Sheet: Calendar Day Detail ===== -->
+  <div class="bs-overlay" id="cal-bs" onclick="closeCalBS(event)">
+    <div class="bs-sheet" id="cal-bs-sheet">
+      <div class="bs-handle"></div>
+      <button class="bs-close" onclick="document.getElementById('cal-bs').classList.remove('show')">✕</button>
+      <div class="bs-title" id="cal-bs-title">5月9日 打卡详情</div>
+      <div class="bs-date" id="cal-bs-date">星期六</div>
+      <div id="cal-bs-content"></div>
+      <button class="share-btn" onclick="showPoster('calendar')">
+        <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+        分享打卡海报
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== Poster Overlay ===== -->
+  <div class="poster-ov" id="poster-ov" onclick="closePoster(event)">
+    <div class="poster-card" id="poster-card">
+      <div class="poster-hero">
+        <div class="ph-streak">连续打卡</div>
+        <div class="ph-num" id="poster-num">15</div>
+        <div class="ph-sub">每一天都是新的起点</div>
+      </div>
+      <div class="poster-body">
+        <div class="poster-user">
+          <div class="poster-avatar">🧘‍♀️</div>
+          <div><div class="poster-uname">Cindy辛迪</div><div class="poster-udate" id="poster-date">2026年5月9日</div></div>
+        </div>
+        <div class="poster-records" id="poster-records"></div>
+        <div class="poster-footer">
+          <div class="poster-brand">Cindy辛迪健康助手 · 健康打卡</div>
+        </div>
+      </div>
+      <div class="poster-actions" id="poster-actions">
+        <button class="poster-btn poster-btn-save" onclick="alert('海报已保存到相册 📷')">保存海报</button>
+        <button class="poster-btn poster-btn-share" onclick="alert('已生成分享链接 🔗')">分享</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ===== Mood =====
+const MOOD_KEY = 'mood_';
+const moodLabels = {'😊':'开心','😌':'平静','😴':'疲惫','😤':'烦躁','🔥':'元气'};
+let currentMood = null;
+
+function todayKey() {
+  const d = new Date();
+  return MOOD_KEY + d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function selectMood(el, emoji) {
+  document.querySelectorAll('.mood-item').forEach(m => m.classList.remove('selected'));
+  el.classList.add('selected');
+  currentMood = emoji;
+  document.getElementById('mood-save-btn').disabled = false;
+}
+
+function saveMood() {
+  if (!currentMood) return;
+  const note = document.getElementById('mood-note').value.trim();
+  const now = new Date();
+  const timeStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  const data = { emoji: currentMood, label: moodLabels[currentMood], note: note, time: timeStr };
+  localStorage.setItem(todayKey(), JSON.stringify(data));
+
+  // Update UI
+  document.getElementById('mood-save-btn').disabled = true;
+  document.getElementById('mood-save-btn').textContent = '已保存 ✓';
+  document.getElementById('mood-saved').classList.add('show');
+  setTimeout(() => document.getElementById('mood-saved').classList.remove('show'), 2000);
+
+  // Show in today records
+  renderMoodRecord(data);
+}
+
+function renderMoodRecord(data) {
+  const card = document.getElementById('mood-rec-card');
+  document.getElementById('mood-rec-icon').textContent = data.emoji;
+  document.getElementById('mood-rec-time').textContent = data.time + ' 记录 · ' + data.label;
+  const noteEl = document.getElementById('mood-rec-note');
+  if (data.note) {
+    noteEl.textContent = data.note;
+    noteEl.style.display = '';
+  } else {
+    noteEl.style.display = 'none';
+  }
+  card.style.display = '';
+  card.style.animation = 'cIn 350ms var(--ease-expo) forwards';
+}
+
+function loadMood() {
+  const raw = localStorage.getItem(todayKey());
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    // Restore picker state
+    currentMood = data.emoji;
+    document.querySelectorAll('.mood-item').forEach(m => {
+      if (m.querySelector('.mood-emoji').textContent === data.emoji) {
+        m.classList.add('selected');
+      }
+    });
+    if (data.note) document.getElementById('mood-note').value = data.note;
+    document.getElementById('mood-save-btn').disabled = true;
+    document.getElementById('mood-save-btn').textContent = '已保存 ✓';
+    // Show record
+    renderMoodRecord(data);
+  } catch(e) {}
+}
+loadMood();
+
+// ===== Tab Navigation =====
+const pgs = ['pg-home','pg-data','pg-checkin','pg-calendar','pg-profile'];
+const tis = document.querySelectorAll('.ti');
+const sb = document.getElementById('sbar');
+const tpg = [0,4];
+
+function switchTab(i) {
+  document.querySelectorAll('.pg').forEach(p => p.classList.remove('on'));
+  tis.forEach(t => t.classList.remove('on'));
+  document.getElementById(pgs[i]).classList.add('on');
+  tis[i].classList.add('on');
+  document.querySelector('.pcont').scrollTop = 0;
+  sb.style.color = tpg.includes(i) ? 'var(--tx-inv)' : 'var(--tx-1)';
+}
+
+function swMp(el) { document.querySelectorAll('.mp').forEach(t => t.classList.remove('on')); el.classList.add('on'); }
+function swRt(el) { document.querySelectorAll('.rt').forEach(t => t.classList.remove('on')); el.classList.add('on'); }
+
+// ===== Form Overlay =====
+function openF(t) {
+  const el = document.getElementById('f-'+t);
+  el.classList.add('show');
+  if (t === 'exercise') {
+    document.getElementById('ex-step1').style.display = '';
+    document.getElementById('ex-step2').classList.remove('show');
+  }
+}
+function closeF(t) { document.getElementById('f-'+t).classList.remove('show'); }
+function submit() {
+  document.querySelectorAll('.fov').forEach(f => f.classList.remove('show'));
+  document.getElementById('suc').classList.add('show');
+  setTimeout(() => document.getElementById('suc').classList.remove('show'), 1500);
+}
+function dissSuc() { document.getElementById('suc').classList.remove('show'); }
+
+// ===== Exercise: Two-step flow =====
+const exTypes = {
+  run: { icon:'🏃', name:'跑步', fields:[
+    {l:'时长',id:'ex-dur',u:'min',v:'',ph:'0'},
+    {l:'距离',id:'ex-dist',u:'km',v:'',ph:'0.0'},
+    {l:'卡路里',id:'ex-cal',u:'kcal',v:'',ph:'0'}
+  ]},
+  strength: { icon:'💪', name:'力量训练', fields:[
+    {l:'时长',id:'ex-dur',u:'min',v:'',ph:'0'},
+    {l:'卡路里',id:'ex-cal',u:'kcal',v:'',ph:'0'},
+    {l:'组数',id:'ex-sets',u:'组',v:'',ph:'0'}
+  ]},
+  yoga: { icon:'🧘', name:'瑜伽', fields:[
+    {l:'时长',id:'ex-dur',u:'min',v:'',ph:'0'},
+    {l:'卡路里',id:'ex-cal',u:'kcal',v:'',ph:'0'}
+  ]},
+  swim: { icon:'🏊', name:'游泳', fields:[
+    {l:'时长',id:'ex-dur',u:'min',v:'',ph:'0'},
+    {l:'距离',id:'ex-dist',u:'m',v:'',ph:'0'},
+    {l:'卡路里',id:'ex-cal',u:'kcal',v:'',ph:'0'}
+  ]},
+  cycling: { icon:'🚴', name:'骑行', fields:[
+    {l:'时长',id:'ex-dur',u:'min',v:'',ph:'0'},
+    {l:'距离',id:'ex-dist',u:'km',v:'',ph:'0.0'},
+    {l:'卡路里',id:'ex-cal',u:'kcal',v:'',ph:'0'}
+  ]},
+  hiit: { icon:'⚡', name:'HIIT', fields:[
+    {l:'时长',id:'ex-dur',u:'min',v:'',ph:'0'},
+    {l:'卡路里',id:'ex-cal',u:'kcal',v:'',ph:'0'}
+  ]},
+  dance: { icon:'💃', name:'舞蹈', fields:[
+    {l:'时长',id:'ex-dur',u:'min',v:'',ph:'0'},
+    {l:'卡路里',id:'ex-cal',u:'kcal',v:'',ph:'0'}
+  ]},
+  walk: { icon:'🚶', name:'健走', fields:[
+    {l:'时长',id:'ex-dur',u:'min',v:'',ph:'0'},
+    {l:'步数',id:'ex-steps',u:'步',v:'',ph:'0'},
+    {l:'卡路里',id:'ex-cal',u:'kcal',v:'',ph:'0'}
+  ]}
+};
+
+function selectExType(el, type) {
+  document.querySelectorAll('.ex-type-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  const t = exTypes[type];
+  document.getElementById('ex-form-title').textContent = t.icon + ' ' + t.name;
+
+  let html = '';
+  t.fields.forEach(f => {
+    html += `<div class="ff"><label>${f.l}</label><div class="fiw"><input class="fi" type="number" id="${f.id}" placeholder="${f.ph}" step="${f.u==='km'||f.u==='m'?'0.1':'1'}"><span class="fu">${f.u}</span></div></div>`;
+  });
+  document.getElementById('ex-form-fields').innerHTML = html;
+
+  setTimeout(() => {
+    document.getElementById('ex-step1').style.display = 'none';
+    document.getElementById('ex-step2').classList.add('show');
+  }, 200);
+}
+
+function exBack() {
+  document.getElementById('ex-step2').classList.remove('show');
+  setTimeout(() => {
+    document.getElementById('ex-step1').style.display = '';
+    document.querySelectorAll('.ex-type-card').forEach(c => c.classList.remove('selected'));
+  }, 200);
+}
+
+// ===== Calendar =====
+let cm = 4, cy = 2026;
+const weekNames = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+// Mock data for each checked day
+const dayRecords = {
+  1: [{type:'body',icon:'🧍',name:'身体数据',time:'08:20',items:['体重 58.8kg','体脂 22.3%','腰围 72.5cm']},{type:'exercise',icon:'🏃',name:'跑步',time:'19:00',items:['30min','5.2km','290kcal']}],
+  2: [{type:'exercise',icon:'🧘',name:'瑜伽',time:'07:30',items:['45min','120kcal']},{type:'diet',icon:'🥗',name:'饮食记录',time:'12:10',items:['午餐: 鸡胸肉沙拉']}],
+  3: [{type:'body',icon:'🧍',name:'身体数据',time:'08:15',items:['体重 58.7kg','体脂 22.3%']},{type:'exercise',icon:'💪',name:'力量训练',time:'18:30',items:['40min','200kcal']}],
+  4: [{type:'exercise',icon:'🏃',name:'跑步',time:'06:30',items:['35min','6.0km','320kcal']},{type:'exercise',icon:'🚶',name:'健走',time:'12:00',items:['20min','3500步','80kcal']}],
+  5: [{type:'body',icon:'🧍',name:'身体数据',time:'08:25',items:['体重 58.6kg','体脂 22.2%','腰围 72.3cm','臀围 92.2cm']},{type:'exercise',icon:'💪',name:'力量训练',time:'19:00',items:['35min','180kcal']}],
+  6: [{type:'exercise',icon:'🚴',name:'骑行',time:'17:00',items:['60min','15km','400kcal']},{type:'diet',icon:'🥗',name:'饮食记录',time:'19:00',items:['晚餐: 清蒸鱼 + 蔬菜']}],
+  7: [{type:'body',icon:'🧍',name:'身体数据',time:'08:30',items:['体重 58.5kg','体脂 22.1%']},{type:'exercise',icon:'🏃',name:'跑步',time:'18:00',items:['30min','5.0km','280kcal']}],
+  8: [{type:'exercise',icon:'⚡',name:'HIIT',time:'07:00',items:['25min','300kcal']},{type:'exercise',icon:'💃',name:'舞蹈',time:'19:30',items:['40min','250kcal']},{type:'diet',icon:'🥗',name:'饮食记录',time:'12:20',items:['午餐: 牛肉蔬菜碗']}],
+  9: [{type:'body',icon:'🧍',name:'身体数据',time:'08:30',items:['体重 58.5kg','体脂 22.1%','腰围 72cm','臀围 92cm']},{type:'exercise',icon:'🏃',name:'跑步',time:'18:15',items:['30min','5.0km','280kcal']},{type:'exercise',icon:'💪',name:'力量训练',time:'18:50',items:['15min','90kcal']}]
+};
+
+function genCal() {
+  const c = document.getElementById('cds'); c.innerHTML = '';
+  const fd = new Date(cy, cm, 1).getDay();
+  const td = new Date(cy, cm+1, 0).getDate();
+  const now = new Date();
+  const isCur = cy===now.getFullYear() && cm===now.getMonth();
+  const isTod = isCur ? now.getDate() : -1;
+  const chked = Object.keys(dayRecords).map(Number);
+  for (let i=0;i<fd;i++) { const d=document.createElement('div'); d.className='cd empty'; c.appendChild(d); }
+  for (let d=1;d<=td;d++) {
+    const el=document.createElement('div');
+    let cl='cd';
+    if (d===isTod) cl+=' tod';
+    if (chked.includes(d)) cl+=' chk';
+    el.className=cl; el.textContent=d;
+    el.addEventListener('click', () => onCalDayClick(d));
+    c.appendChild(el);
+  }
+  document.getElementById('mt').textContent=cy+'年'+monthNames[cm];
+}
+function prevM() { cm--; if(cm<0){cm=11;cy--;} genCal(); }
+function nextM() { cm++; if(cm>11){cm=0;cy++;} genCal(); }
+genCal();
+
+// ===== Calendar Bottom Sheet =====
+function onCalDayClick(day) {
+  const recs = dayRecords[day];
+  if (!recs) return; // no records for this day
+
+  const date = new Date(cy, cm, day);
+  const dateStr = (cm+1)+'月'+day+'日';
+  const weekStr = weekNames[date.getDay()];
+
+  document.getElementById('cal-bs-title').textContent = dateStr + ' 打卡详情';
+  document.getElementById('cal-bs-date').textContent = weekStr;
+
+  let html = '';
+  recs.forEach(r => {
+    html += `<div class="rec-card">
+      <div class="rec-hd">
+        <div class="rec-hd-left">
+          <div class="rec-icon rec-icon-${r.type}">${r.icon}</div>
+          <div><div class="rec-name">${r.name}</div><div class="rec-time">${r.time} 打卡</div></div>
+        </div>
+      </div>
+      <div class="rec-items">`;
+    r.items.forEach(item => {
+      html += `<span class="rec-tag rec-tag-sage">${item}</span>`;
+    });
+    html += `</div></div>`;
+  });
+  document.getElementById('cal-bs-content').innerHTML = html;
+
+  document.getElementById('cal-bs').classList.add('show');
+}
+
+function closeCalBS(e) {
+  if (e.target === document.getElementById('cal-bs')) {
+    document.getElementById('cal-bs').classList.remove('show');
+  }
+}
+
+// ===== Poster =====
+function showPoster(source) {
+  // Close bottom sheet if open
+  document.getElementById('cal-bs').classList.remove('show');
+
+  const now = new Date();
+  const dateStr = now.getFullYear()+'年'+(now.getMonth()+1)+'月'+now.getDate()+'日';
+  document.getElementById('poster-date').textContent = dateStr;
+
+  // Records for poster
+  let records = [];
+  if (source === 'today') {
+    records = dayRecords[now.getDate()] || [];
+  } else if (source === 'calendar') {
+    // Use today's mock data for demo
+    records = dayRecords[9] || [];
+  }
+
+  let recHtml = '';
+  records.forEach(r => {
+    recHtml += `<div class="poster-rec-item">
+      <span class="poster-rec-icon">${r.icon}</span>
+      <span class="poster-rec-text">${r.name}</span>
+      <span class="poster-rec-val">${r.time}</span>
+    </div>`;
+    r.items.forEach(item => {
+      recHtml += `<div class="poster-rec-item">
+        <span class="poster-rec-icon"></span>
+        <span class="poster-rec-text">${item}</span>
+      </div>`;
+    });
+  });
+  document.getElementById('poster-records').innerHTML = recHtml;
+
+  document.getElementById('poster-ov').classList.add('show');
+}
+
+function closePoster(e) {
+  if (e.target === document.getElementById('poster-ov')) {
+    document.getElementById('poster-ov').classList.remove('show');
+  }
+}
+</script>
+</body>
+</html>
